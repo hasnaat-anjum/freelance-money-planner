@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Freelance Money Planner — plan irregular income, bills and savings</title>
+<meta name="description" content="A free, offline money planner for freelancers: track irregular income, set aside tax, budget by envelope, never miss a bill, and save towards goals. No account, no upload — your data stays in your browser.">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<header class="app-header">
+  <div class="app-header-inner">
+    <div>
+      <h1>💰 Freelance Money Planner</h1>
+      <p class="tagline">Irregular income, planned properly — tax pot, envelopes, bills and goals in one place.</p>
+    </div>
+    <div class="month-nav" aria-label="Choose month">
+      <button id="month-prev" type="button" aria-label="Previous month">‹ Prev</button>
+      <strong id="month-label">November 2026</strong>
+      <button id="month-next" type="button" aria-label="Next month">Next ›</button>
+      <button id="month-today" type="button">Today</button>
+    </div>
+  </div>
+</header>
+
+<nav class="tab-bar no-print" aria-label="Sections">
+  <button class="tab-btn active" data-tab="dashboard" type="button">Dashboard</button>
+  <button class="tab-btn" data-tab="income" type="button">Income</button>
+  <button class="tab-btn" data-tab="expenses" type="button">Expenses</button>
+  <button class="tab-btn" data-tab="bills" type="button">Bills</button>
+  <button class="tab-btn" data-tab="goals" type="button">Goals</button>
+  <button class="tab-btn" data-tab="reports" type="button">Reports</button>
+  <button class="tab-btn" data-tab="settings" type="button">Settings</button>
+</nav>
+
+<main>
+  <!-- ============================ DASHBOARD ============================ -->
+  <section class="tab-panel active" id="tab-dashboard">
+    <h2>Dashboard — <span id="dashboard-month"></span></h2>
+    <p class="muted">Everything below is for the month shown above. Use Prev / Next to look at other months.</p>
+
+    <div class="grid grid-3">
+      <div class="card stat-card"><div class="stat-label">Income received</div><div class="stat-value" id="stat-received">—</div><div class="stat-sub">Actually in your pocket</div></div>
+      <div class="card stat-card"><div class="stat-label">Expected income</div><div class="stat-value" id="stat-expected">—</div><div class="stat-sub">Invoiced / promised, not yet paid</div></div>
+      <div class="card stat-card"><div class="stat-label">Expenses</div><div class="stat-value" id="stat-expenses">—</div><div class="stat-sub">Spent this month</div></div>
+      <div class="card stat-card"><div class="stat-label">Balance</div><div class="stat-value" id="stat-balance">—</div><div class="stat-sub">Received minus expenses</div></div>
+      <div class="card stat-card"><div class="stat-label">Tax pot (<span id="tax-rate-label">10%</span>)</div><div class="stat-value" id="stat-tax">—</div><div class="stat-sub">Set this aside — it is not yours to spend</div></div>
+      <div class="card stat-card"><div class="stat-label">Savings rate</div><div class="stat-value" id="stat-savings">—</div><div class="stat-sub">Share of income not spent</div></div>
+    </div>
+
+    <div class="grid grid-2">
+      <div class="card">
+        <div class="panel-title">Irregular-income safety net</div>
+        <p>Freelance income jumps around. Plan from your <strong>3-month average</strong>, not your best month.</p>
+        <p>Average monthly income (last 3 months): <strong id="avg-income">—</strong></p>
+        <p>Safe monthly budget (average minus tax): <strong id="safe-budget">—</strong></p>
+        <p class="muted">If this month's spending stays under the safe budget, you are living within what you reliably earn.</p>
+      </div>
+      <div class="card">
+        <div class="panel-title">Needs attention</div>
+        <ul class="alerts" id="alerts"></ul>
+      </div>
+    </div>
+
+    <div class="grid grid-2">
+      <div class="card">
+        <div class="panel-title">Savings goals</div>
+        <div id="goals-snapshot"></div>
+        <p><button class="btn btn-secondary btn-small" type="button" onclick="document.querySelector('[data-tab=goals]').click()">Open goals →</button></p>
+      </div>
+      <div class="card">
+        <div class="panel-title">Recent activity</div>
+        <ul class="activity" id="recent-activity"></ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================= INCOME ============================== -->
+  <section class="tab-panel" id="tab-income">
+    <h2>Income</h2>
+    <p class="muted">Record money in two states: <strong>received</strong> (in your account) and <strong>expected</strong> (invoiced or promised). Only received income counts towards your average and your tax pot — expected money is not yours yet.</p>
+
+    <div class="card">
+      <div class="panel-title">Your reliable number</div>
+      <p>3-month average received income: <strong id="income-avg">—</strong> &nbsp;·&nbsp; Safe monthly budget: <strong id="income-safe">—</strong></p>
+    </div>
+
+    <div class="card no-print">
+      <div class="panel-title">Add income</div>
+      <form id="form-income">
+        <div class="form-row">
+          <div class="field"><label for="inc-date">Date</label><input type="date" id="inc-date" name="date" required></div>
+          <div class="field"><label for="inc-client">Client / source</label><input type="text" id="inc-client" name="client" placeholder="e.g. Ayesha — Website" required></div>
+          <div class="field"><label for="inc-category">Category</label><input type="text" id="inc-category" name="category" placeholder="e.g. Web design, SEO, eBay"></div>
+          <div class="field"><label for="inc-source">Type</label>
+            <select id="inc-source" name="source">
+              <option>Client work</option><option>eBay sales</option><option>Product sales</option><option>Other</option>
+            </select>
+          </div>
+          <div class="field"><label for="inc-amount">Amount</label><input type="text" id="inc-amount" name="amount" inputmode="decimal" placeholder="e.g. 85000" required></div>
+          <div class="field"><label for="inc-status">Status</label>
+            <select id="inc-status" name="status"><option value="received">Received</option><option value="expected">Expected</option></select>
+          </div>
+        </div>
+        <div class="field"><label for="inc-note">Note (optional)</label><input type="text" id="inc-note" name="note" placeholder="e.g. Deposit, 50% upfront"></div>
+        <button class="btn" type="submit">Add income</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <div class="panel-title">Income — <span class="month-inline"></span></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Date</th><th>Client</th><th>Category</th><th>Type</th><th class="num">Amount</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="income-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ EXPENSES ============================= -->
+  <section class="tab-panel" id="tab-expenses">
+    <h2>Expenses &amp; envelopes</h2>
+    <p class="muted">Envelope budgeting: give every rupee/dollar a job before the month starts. Spend from an envelope, and the app shows what is left — overspending turns red.</p>
+
+    <div class="card no-print">
+      <div class="panel-title">Add expense</div>
+      <form id="form-expense">
+        <div class="form-row">
+          <div class="field"><label for="exp-date">Date</label><input type="date" id="exp-date" name="date" required></div>
+          <div class="field"><label for="expense-envelope">Envelope</label><select id="expense-envelope" name="envelope"></select></div>
+          <div class="field"><label for="exp-amount">Amount</label><input type="text" id="exp-amount" name="amount" inputmode="decimal" placeholder="e.g. 4200" required></div>
+        </div>
+        <div class="field"><label for="exp-note">Note</label><input type="text" id="exp-note" name="note" placeholder="e.g. Weekly groceries"></div>
+        <button class="btn" type="submit">Add expense</button>
+      </form>
+    </div>
+
+    <div class="card no-print">
+      <div class="panel-title">New envelope</div>
+      <form id="form-envelope">
+        <div class="form-row">
+          <div class="field"><label for="env-name">Envelope name</label><input type="text" id="env-name" name="envname" placeholder="e.g. Subscriptions"></div>
+          <div class="field"><label for="env-budget">Monthly budget</label><input type="text" id="env-budget" name="budget" inputmode="decimal" placeholder="e.g. 5000"></div>
+          <div class="field"><label for="env-color">Colour</label><input type="color" id="env-color" name="color" value="#1d4ed8"></div>
+        </div>
+        <button class="btn btn-secondary" type="submit">Add envelope</button>
+      </form>
+    </div>
+
+    <div id="envelope-list" class="grid grid-2"></div>
+
+    <div class="card">
+      <div class="panel-title">Expenses — <span class="month-inline"></span></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Date</th><th>Envelope</th><th>Note</th><th class="num">Amount</th><th>Actions</th></tr></thead>
+          <tbody id="expense-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================== BILLS ============================== -->
+  <section class="tab-panel" id="tab-bills">
+    <h2>Recurring bills</h2>
+    <p class="muted">Rent, internet, subscriptions — anything that comes back every month. Mark a bill paid and the app records the expense automatically, so your reports stay honest.</p>
+
+    <div class="card no-print">
+      <div class="panel-title">Add a bill</div>
+      <form id="form-bill">
+        <div class="form-row">
+          <div class="field"><label for="bill-name">Bill name</label><input type="text" id="bill-name" name="billname" placeholder="e.g. Internet (PTCL)" required></div>
+          <div class="field"><label for="bill-amount">Amount</label><input type="text" id="bill-amount" name="amount" inputmode="decimal" placeholder="e.g. 4500" required></div>
+          <div class="field"><label for="bill-day">Due day of month (1–31)</label><input type="number" id="bill-day" name="day" min="1" max="31" placeholder="e.g. 5" required></div>
+          <div class="field"><label for="bill-category">Category</label><input type="text" id="bill-category" name="category" placeholder="e.g. Utilities"></div>
+        </div>
+        <button class="btn" type="submit">Add bill</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <div class="panel-title">Your bills</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Bill</th><th>Category</th><th class="num">Amount</th><th>Due</th><th>Next due</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="bills-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================== GOALS ============================== -->
+  <section class="tab-panel" id="tab-goals">
+    <h2>Savings goals</h2>
+    <p class="muted">A goal turns spare money into a plan. The app works out how much to save each month to hit the deadline — and tells you when you are already there.</p>
+
+    <div class="card no-print">
+      <div class="panel-title">New goal</div>
+      <form id="form-goal">
+        <div class="form-row">
+          <div class="field"><label for="goal-name">Goal</label><input type="text" id="goal-name" name="goalname" placeholder="e.g. New laptop" required></div>
+          <div class="field"><label for="goal-target">Target amount</label><input type="text" id="goal-target" name="target" inputmode="decimal" placeholder="e.g. 250000" required></div>
+          <div class="field"><label for="goal-saved">Already saved</label><input type="text" id="goal-saved" name="saved" inputmode="decimal" placeholder="e.g. 145000"></div>
+          <div class="field"><label for="goal-deadline">Deadline</label><input type="date" id="goal-deadline" name="deadline"></div>
+        </div>
+        <div class="field"><label for="goal-note">Note (optional)</label><input type="text" id="goal-note" name="note" placeholder="e.g. MacBook for client work"></div>
+        <button class="btn" type="submit">Add goal</button>
+      </form>
+    </div>
+
+    <div id="goals-list" class="grid grid-2"></div>
+  </section>
+
+  <!-- ============================= REPORTS ============================= -->
+  <section class="tab-panel" id="tab-reports">
+    <h2>Monthly report — <span id="report-month"></span></h2>
+    <p class="muted">Print this page (or save as PDF from the print dialogue) to share the month with an accountant, a partner, or your future self.</p>
+
+    <div class="card">
+      <div class="panel-title">Summary</div>
+      <div class="report-summary">
+        <div class="row"><span>Income received</span><strong id="rep-received">—</strong></div>
+        <div class="row"><span>Expected (not yet paid)</span><strong id="rep-expected">—</strong></div>
+        <div class="row"><span>Expenses</span><strong id="rep-expenses">—</strong></div>
+        <div class="row"><span>Tax pot set aside</span><strong id="rep-tax">—</strong></div>
+        <div class="row total"><span>Balance (received − expenses)</span><strong id="rep-balance">—</strong></div>
+        <div class="row total"><span>Truly spendable (balance − tax pot)</span><strong id="rep-spendable">—</strong></div>
+        <div class="row"><span>Savings rate</span><strong id="rep-savings">—</strong></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="panel-title">Where the money went</div>
+      <canvas class="chart" id="chart-spending" height="220" aria-label="Bar chart of spending by category"></canvas>
+    </div>
+
+    <div class="card">
+      <div class="panel-title">Income vs expenses — last 6 months</div>
+      <canvas class="chart" id="chart-trend" height="220" aria-label="Line chart of income versus expenses over six months"></canvas>
+    </div>
+
+    <div class="card no-print">
+      <div class="panel-title">Export &amp; backup</div>
+      <p class="muted">Your data never leaves this browser unless you export it. Keep a JSON backup somewhere safe — it is the only way to move your data to another device.</p>
+      <div class="btn-row">
+        <button class="btn btn-secondary" id="btn-export-income" type="button">Export income (CSV)</button>
+        <button class="btn btn-secondary" id="btn-export-expenses" type="button">Export expenses (CSV)</button>
+        <button class="btn btn-secondary" id="btn-export-json" type="button">Download full backup (JSON)</button>
+        <button class="btn" id="btn-print" type="button">Print / save as PDF</button>
+      </div>
+      <div class="field" style="margin-top:0.75rem">
+        <label for="import-file">Import a JSON backup</label>
+        <input type="file" id="import-file" accept="application/json,.json">
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ SETTINGS ============================= -->
+  <section class="tab-panel" id="tab-settings">
+    <h2>Settings</h2>
+
+    <div class="card">
+      <div class="panel-title">Your details</div>
+      <form id="form-settings">
+        <div class="form-row">
+          <div class="field"><label for="set-business">Business / display name</label><input type="text" id="set-business" name="business" placeholder="e.g. Hasnaat Anjum — Freelance"></div>
+          <div class="field"><label for="set-name">Your name</label><input type="text" id="set-name" name="yourname" placeholder="e.g. Hasnaat"></div>
+          <div class="field"><label for="set-currency">Currency</label>
+            <select id="set-currency" name="currency">
+              <option value="PKR">PKR — Pakistani Rupee (Rs.)</option>
+              <option value="USD">USD — US Dollar ($)</option>
+              <option value="GBP">GBP — British Pound (£)</option>
+              <option value="EUR">EUR — Euro (€)</option>
+              <option value="INR">INR — Indian Rupee (₹)</option>
+              <option value="AED">AED — UAE Dirham</option>
+            </select>
+          </div>
+          <div class="field"><label for="set-tax">Tax rate to set aside (%)</label><input type="number" id="set-tax" name="tax" min="0" max="100" step="0.5" value="10"></div>
+        </div>
+        <button class="btn" type="submit">Save settings</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <div class="panel-title">Try it out</div>
+      <p class="muted">Load a realistic demo month (a freelancer in November 2026) to see every feature working — income, envelopes, bills, goals and charts.</p>
+      <button class="btn btn-secondary" id="btn-demo" type="button">Load demo data</button>
+    </div>
+
+    <div class="card">
+      <div class="panel-title">Privacy</div>
+      <p class="muted">There is no account and no server. Everything you enter is stored only in this browser's local storage, on your own device. Clearing your browser data erases it — export a JSON backup from Reports first if it matters to you.</p>
+    </div>
+
+    <div class="card">
+      <div class="panel-title">Danger zone</div>
+      <p class="muted">Erase every income entry, expense, bill, goal and setting in this app. This cannot be undone.</p>
+      <button class="btn btn-danger" id="btn-reset" type="button">Erase all my data</button>
+    </div>
+  </section>
+</main>
+
+<footer class="app-footer">
+  Freelance Money Planner — free, offline, open source (MIT). Your money, your browser, your business.
+</footer>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script src="js/money.js"></script>
+<script src="js/store.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
